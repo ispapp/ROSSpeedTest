@@ -1,8 +1,6 @@
 name: Build and deploy the application to Koyeb
 
 on:
-  schedule:
-    - cron: '40 7 * * *'
   push:
     branches:
       - 'main'
