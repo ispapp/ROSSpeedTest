@@ -1,1 +1,1 @@
-go build -tags=jsoniter .
+go build -tags=jsoniter . -o speedtest

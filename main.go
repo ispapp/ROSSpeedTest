@@ -2,15 +2,20 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 )
 
 func main() {
+	if err := godotenv.Load(); err != nil {
+		log.Default().Println(err.Error())
+	}
 	port := os.Getenv("PORT")
 	if port == "" {
-		port = "8000"
+		port = "9000"
 	}
 	r := gin.Default()
 	r.GET("/", func(c *gin.Context) {

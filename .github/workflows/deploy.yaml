@@ -22,7 +22,7 @@ jobs:
       - name: Build and deploy the application
         uses: koyeb/action-git-deploy@v1
         with:
-          app-name: speedtest-${{ github.ref_name }}
+          app-name: rosspeedtest
           service-ports: "9000:http"
           service-routes: "/:9000"
           git-run-command: bin/speedtest
