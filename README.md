@@ -32,3 +32,31 @@ Where:
 - **Processing Delay:** Delay within devices (routers, switches) along the communication path.
 - **Queuing Delay:** Delay due to waiting in a queue in a congested network.
 - **RX Time:** Reception time for receiving data from the destination back to the source.
+
+**`usage`**:
+  -  import the speedtest package in your api code.
+        ```bash
+        go get -u github.com/kmoz000/ROSSpeedTest
+        ```
+  -  import the speedtest ros script function into routerboard.
+
+        ```bash
+        :global SpeedTest do={
+            :if (!any$url && [:typeof $url] != "str") do={
+                :return "can't use that url bro!"
+            }
+            :local address $url;
+            :local id [:rndnum from=10000000 to=99999999];
+            :local cout ({});
+            :local data [:rndstr from="abcdef%^&" length=100];
+            :for i from=0 to=4 do={
+                :do {
+                    :set ($cout->$i) ([([:parse ([/tool fetch url="$address?seq=$i&id=$id" http-data=$data  mode=http http-method=post output=user as-value]->"data")])]); 
+                } on-error={}
+            }
+            :return ($cout->([:len $cout]-1));
+        }
+        ```
+       - run the function from routerboard console:
+        
+            `:put [$SpeedTest url="<your api /speedtest endpoint>"]`

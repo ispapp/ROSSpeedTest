@@ -61,7 +61,6 @@ func (t *SpeedTest) Handler(res http.ResponseWriter, req *http.Request) {
 				res.WriteHeader(http.StatusOK)
 				io.WriteString(res, cmd)
 			}
-
 			if t.TryLock() {
 				t.Actives[id] = tt
 				t.Unlock()

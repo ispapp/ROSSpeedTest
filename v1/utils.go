@@ -87,19 +87,20 @@ func getRequestSize(req *http.Request) int {
 	bytesSize += len(req.RemoteAddr)
 	bytesSize += len(req.Referer())
 	bytesSize += int(req.ContentLength)
-	bytesSize += len(req.Proto)
+	bytesSize += 8 // Protocol Version: HTTP/1.1 (8 bytes)
 	return bytesSize
 }
-func getResponceSize(req *http.Response) int {
-	bytesSize := 0
-	for k, v := range req.Header {
-		bytesSize += len(k) + len(v[0]) // Assuming single value per header
-	}
-	bytesSize += int(req.ContentLength)
-	bytesSize += len(req.Status)
-	bytesSize += len(req.Proto)
-	return bytesSize
-}
+
+// func getResponceSize(req *http.Response) int {
+// 	bytesSize := 0
+// 	for k, v := range req.Header {
+// 		bytesSize += len(k) + len(v[0]) // Assuming single value per header
+// 	}
+// 	bytesSize += int(req.ContentLength)
+// 	bytesSize += len(req.Status)
+// 	bytesSize += len(req.Proto)
+// 	return bytesSize
+// }
 
 // \{ // definitly need
 // 		(
