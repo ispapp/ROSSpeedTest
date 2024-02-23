@@ -14,6 +14,7 @@ func TestConvertStructToRouterOSArrayAndBack(t *testing.T) {
 		TX:        1024,
 		RX:        1024,
 		PING:      95,
+		Size:      0,
 		TestID:    "test0",
 		CreatedAt: time.Now().Unix(),
 	}
@@ -26,8 +27,8 @@ func TestConvertStructToRouterOSArrayAndBack(t *testing.T) {
 		t.Errorf("ConvertStructToRouterOSArray returned %s, expected %s", result, expectedResult)
 	} else {
 		t.Logf("ConvertStructToRouterOSArray %dns", dsince.Nanoseconds())
-		if decoded, err := speedtest.DecodeROString(result); err != nil {
-			if decodedData, ok := decoded.(*speedtest.Test); ok {
+		if decoded, err := speedtest.DecodeROString(result); err == nil { // decode the rosScript string into an interface
+			if decodedData, ok := decoded.(*speedtest.Test); ok { // convert resulted interface into your struct
 				if decodedData.TestID != testData.TestID {
 					t.Errorf("DecodeROString returned %+v, expected %+v", decodedData, testData)
 				} else {
