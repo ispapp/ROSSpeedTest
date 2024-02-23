@@ -8,7 +8,7 @@ import (
 	speedtest "github.com/kmoz000/RouterOsSpeedTest/v1"
 )
 
-func TestConvertStructToRouterOSArray(t *testing.T) {
+func TestConvertStructToRouterOSArrayAndBack(t *testing.T) {
 	// Call the function to convert the struct to RouterOS array
 	testData := speedtest.Test{
 		TX:        1024,
@@ -21,11 +21,20 @@ func TestConvertStructToRouterOSArray(t *testing.T) {
 	result := speedtest.ROString(testData)
 	dsince := time.Since(since)
 	// Check the expected output
-	expectedResult := fmt.Sprintf(`{"TestID"="test0";"TX"=(1024.000000,1024.000000);"RX"=(1024.000000,1024.000000);"PING"=(90,95);"CreatedAt"=%d}`, testData.CreatedAt)
+	expectedResult := fmt.Sprintf(`{"TestID"="test0";"TX"=1024;"RX"=1024;"PING"=95;"Size"=0;"CreatedAt"=%d}`, testData.CreatedAt)
 	if result != expectedResult {
 		t.Errorf("ConvertStructToRouterOSArray returned %s, expected %s", result, expectedResult)
 	} else {
 		t.Logf("ConvertStructToRouterOSArray %dns", dsince.Nanoseconds())
+		if decoded, err := speedtest.DecodeROString(result); err != nil {
+			if decodedData, ok := decoded.(*speedtest.Test); ok {
+				if decodedData.TestID != testData.TestID {
+					t.Errorf("DecodeROString returned %+v, expected %+v", decodedData, testData)
+				} else {
+					t.Logf("DecodeROString %dns", dsince.Nanoseconds())
+				}
+			}
+		}
 	}
 }
 func TestRouterOsArraysregex(t *testing.T) {

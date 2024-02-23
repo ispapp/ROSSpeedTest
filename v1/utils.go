@@ -5,16 +5,16 @@ import (
 	"net/http"
 	"reflect"
 	"regexp"
+	"strconv"
+	"strings"
 )
 
 func ROString(t interface{}) string {
 	if t == nil {
 		return ""
 	}
-
 	val := reflect.ValueOf(t)
 	typ := reflect.TypeOf(t)
-
 	switch val.Kind() {
 	case reflect.Struct:
 		result := "{"
@@ -89,6 +89,78 @@ func getRequestSize(req *http.Request) int {
 	bytesSize += int(req.ContentLength)
 	bytesSize += 8 // Protocol Version: HTTP/1.1 (8 bytes)
 	return bytesSize
+}
+
+func DecodeROString(s string) (interface{}, error) {
+	var t interface{}
+	if !IsRouterOSArray(s) {
+		return nil, fmt.Errorf("decodeROString: the second argument must be a non-nil pointer to a struct")
+	}
+	val := reflect.ValueOf(t)
+	// typ := reflect.TypeOf(t)
+
+	if val.Kind() != reflect.Ptr || val.IsNil() {
+		return nil, fmt.Errorf("decodeROString: the second argument must be a non-nil pointer to a struct")
+	}
+
+	if val.Elem().Kind() != reflect.Struct {
+		return nil, fmt.Errorf("decodeROString: the second argument must be a pointer to a struct")
+	}
+
+	val = val.Elem()
+	// typ = typ.Elem()
+
+	// Removing curly braces from the string
+	s = strings.Trim(s, "{}")
+
+	// Splitting the string into key-value pairs
+	pairs := strings.Split(s, ";")
+
+	for _, pair := range pairs {
+		// Splitting each key-value pair into key and value
+		kv := strings.Split(pair, "=")
+
+		if len(kv) != 2 {
+			return nil, fmt.Errorf("decodeROString: invalid key-value pair: %s", pair)
+		}
+
+		key := strings.TrimSpace(kv[0])
+		value := strings.TrimSpace(kv[1])
+
+		// Finding the field in the struct
+		field := val.FieldByName(key)
+		if field.IsNil() {
+			return nil, fmt.Errorf("decodeROString: field not found in struct: %s", key)
+		}
+
+		// Setting the value of the field based on its type
+		switch field.Kind() {
+		case reflect.String:
+			field.SetString(value)
+		case reflect.Bool:
+			boolValue, err := strconv.ParseBool(value)
+			if err != nil {
+				return nil, fmt.Errorf("decodeROString: error parsing boolean value for field %s: %v", key, err)
+			}
+			field.SetBool(boolValue)
+		case reflect.Float64:
+			floatValue, err := strconv.ParseFloat(value, 64)
+			if err != nil {
+				return nil, fmt.Errorf("decodeROString: error parsing float value for field %s: %v", key, err)
+			}
+			field.SetFloat(floatValue)
+		case reflect.Int:
+			intValue, err := strconv.Atoi(value)
+			if err != nil {
+				return nil, fmt.Errorf("decodeROString: error parsing integer value for field %s: %v", key, err)
+			}
+			field.SetInt(int64(intValue))
+		default:
+			return nil, fmt.Errorf("decodeROString: unsupported field type: %s", field.Kind())
+		}
+	}
+
+	return t, nil
 }
 
 // func getResponceSize(req *http.Response) int {

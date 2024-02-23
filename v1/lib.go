@@ -15,6 +15,11 @@ type SpeedTest struct {
 	sync.Mutex
 }
 
+//	func oldHandler(res http.ResponseWriter, req *http.Request) {
+//		// keep old logics for authorisation
+//		speed := SpeedTest{}
+//		speed.Handler(res, req)
+//	}
 func (t *SpeedTest) Handler(res http.ResponseWriter, req *http.Request) {
 	switch req.Method {
 	case "POST":
@@ -39,7 +44,7 @@ func (t *SpeedTest) Handler(res http.ResponseWriter, req *http.Request) {
 				dsince := time.Since(time.Unix(old.CreatedAt, 0)).Milliseconds()
 				if i, err := strconv.ParseInt(seq, 10, 32); err == nil {
 					if i >= 4 {
-						delete(t.Actives, id)
+						delete(t.Actives, id) // cleanup for less memory usage
 					}
 				}
 				size := getRequestSize(req)
