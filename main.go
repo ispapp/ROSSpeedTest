@@ -14,7 +14,7 @@ import (
 
 func main() {
 	log.Default().SetPrefix("[SPEEDTEST]")
-	lport := "8000"
+	lport := "9000"
 	if err := godotenv.Load(); err != nil {
 		log.Default().Fatal(err)
 	}
