@@ -21,11 +21,7 @@ jobs:
         uses: koyeb/action-git-deploy@v1
         with:
           app-name: rosspeedtest
-          service-name: rosspeedtest
           service-ports: "9000:http"
           service-routes: "/:9000"
-          service-checks: "9000:http:/"
-          service-env: PORT=9000
-          git-run-command: bin/speedtest
-      - name: Clean up Koyeb Service
-        uses: koyeb/action-git-deploy/cleanup@v1
+          git-run-command: bin/ROSSpeedTest
+          skip-cache: true
