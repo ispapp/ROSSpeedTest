@@ -3,7 +3,6 @@ package speedtest
 import (
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -21,52 +20,63 @@ type SpeedTest struct {
 //		speed.Handler(res, req)
 //	}
 func (t *SpeedTest) Handler(res http.ResponseWriter, req *http.Request) {
+	newtime := time.Now()
 	switch req.Method {
-	case "POST":
+	case "GET":
 		id := req.URL.Query().Get("id")
 		seq := req.URL.Query().Get("seq")
-		if req.UserAgent() == "MikroTik" && id != "" && seq != "" {
-			// for name, values := range req.Header {
-			// 	for _, value := range values {
-			// 		fmt.Println(name, value)
-			// 	}
-			// } bytes / s
-			since := time.Now().Unix()
+		ping := req.URL.Query().Get("ping")
+		if req.UserAgent() == "MikroTik" && id != "" && seq != "" && ping != "" {
+			_ping, err := ConvertToMilliseconds(ping)
+			if err != nil {
+				res.Write([]byte{})
+			}
 			tt := Test{
-				TX:        0,
-				RX:        0,
-				PING:      0,
-				TestID:    id,
-				Size:      0,
-				CreatedAt: since,
+				TX:     []int64{},
+				RX:     []int64{},
+				PING:   _ping,
+				TestID: id,
 			}
 			if old, ok := t.Actives[id]; ok {
-				dsince := time.Since(time.Unix(old.CreatedAt, 0)).Milliseconds()
+				dsince := time.Since(time.Unix(old.CreatedAt, 0)).Milliseconds() - time.Since(newtime).Milliseconds()
 				if i, err := strconv.ParseInt(seq, 10, 32); err == nil {
 					if i >= 4 {
 						delete(t.Actives, id) // cleanup for less memory usage
 					}
 				}
-				size := getRequestSize(req)
-				TX := ((size * 8) / int(dsince/2)) * 1000
-				RX := (((size + old.Size) * 8) / int(dsince/2)) * 1000
-				PING := (74 * 1000 * 8) / (TX + RX) // ping packet frame size 74 bytes. which would be 20 bytes of IP header, 8 bytes of ICMP header + 32 data
+				size := getPacketSize(req)
+				// timeTx/timeRx=sizeTx/sizeRX
+				// timeTx/(timeRxTx - timeTx)=sizeTx/sizeRX
+				// timeTx =sizeTx.(timeRxTx - timeTx)/sizeRX
+				// timeTx + timeTx/sizeRX=sizeTx.timeRxTx/sizeRX
+				// timeTx(sizeRX + 1)/sizeRX=sizeTx.timeRxTx/sizeRX
+				// timeTx=(sizeTx.timeRxTx.sizeRX)/(sizeRX.(sizeRX + 1))
+				timeTx := dsince / 100
+				TX := int64(size) * 8 * 1000 / timeTx
+				fmt.Println(timeTx)
+				RX := (_ping * 74 * 1000) - int64(TX)
+				_tx := append(old.TX, int64(TX))
+				_rx := append(old.RX, RX)
+				txAvg := Avg(_tx)
+				rxAvg := Avg(_rx)
 				// send time of sending as created ..
 				// and for rx i need time of sending and time of recept and tx rate to calculate recept time
 				tt = Test{
-					TX:        TX,
-					RX:        RX,
-					PING:      int(PING),
+					TX:        _tx,
+					RX:        _rx,
+					TxAvg:     int64(txAvg),
+					RxAvg:     int64(rxAvg),
+					PING:      _ping,
 					TestID:    id,
-					Size:      len(fmt.Sprintf(":return %s", ROString(old))),
-					CreatedAt: since,
+					Size:      int64(len(fmt.Sprintf(":return %s", ROString(tt))) + size + 8),
+					CreatedAt: time.Now().Unix(),
 				}
-				log.Default().Printf("seq: %s \t id: %s, reqsize: %dbytes", seq, id, size)
 				cmd := fmt.Sprintf(":return %s", ROString(tt))
-				res.WriteHeader(http.StatusOK)
+				res.Header().Add("Status", http.StatusText(200))
 				io.WriteString(res, cmd)
 			}
 			if t.TryLock() {
+				tt.CreatedAt = time.Now().Unix()
 				t.Actives[id] = tt
 				t.Unlock()
 			}

@@ -7,6 +7,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"time"
 )
 
 func ROString(t interface{}) string {
@@ -76,21 +77,35 @@ func IsRouterOSArray(s string) bool {
 	re := regexp.MustCompile(`^\{("([0-9a-zA-Z]*)"(=?)(("?{?\(?)([0-9a-zA-Z."]*(,?))*("?}?\)?,?;?))(;?))*\}$`)
 	return re.MatchString(s)
 }
-func getRequestSize(req *http.Request) int {
+func getPacketSize(req *http.Request) int {
 	bytesSize := 0
+	bytesSize += len("Host:") + len(req.Host) + 3 // space (0x32) + \r\n
 	for k, v := range req.Header {
-		bytesSize += len(k) + len(v[0]) // Assuming single value per header
+		bytesSize += len(k) + 3
+		for _, _v := range v {
+			bytesSize += len(_v) + 1 // space (0x32)
+		}
 	}
-	bytesSize += len(req.Method)
-	bytesSize += len(req.RequestURI)
-	bytesSize += len(req.UserAgent())
-	bytesSize += len(req.RemoteAddr)
-	bytesSize += len(req.Referer())
-	bytesSize += int(req.ContentLength)
-	bytesSize += 8 // Protocol Version: HTTP/1.1 (8 bytes)
+	bytesSize += len(req.Method) + 1
+	bytesSize += len(req.RequestURI) + 1
+	bytesSize += 8  // Protocol Version: HTTP/1.1 (8 bytes)
+	bytesSize += 32 // Transmission Control Protocol (headers)
+	bytesSize += 20 // Internet Protocol Version 4 (headers)
+	bytesSize += 14 // Ethernet II (headers)
 	return bytesSize
 }
 
+func Avg(numbers []int64) float64 {
+	if len(numbers) == 0 {
+		return 0.0
+	}
+	var sum float64
+	for _, num := range numbers {
+		sum += float64(num)
+	}
+	average := sum / float64(len(numbers))
+	return average
+}
 func DecodeROString(s string) (interface{}, error) {
 	var t interface{}
 	if !IsRouterOSArray(s) {
@@ -161,6 +176,26 @@ func DecodeROString(s string) (interface{}, error) {
 	}
 
 	return t, nil
+}
+func ConvertToMilliseconds(timeStr string) (int64, error) {
+	// Parse the time string
+	var MytimeStr []string
+	fragments := strings.Split(timeStr, ":")
+	if len(fragments) != 3 {
+		return 0, fmt.Errorf("invalid format")
+	}
+	MytimeStr = append(MytimeStr, fmt.Sprintf("%sh", fragments[0]))
+	MytimeStr = append(MytimeStr, fmt.Sprintf("%sm", fragments[1]))
+	MytimeStr = append(MytimeStr, fmt.Sprintf("%ss", fragments[2]))
+	formated := strings.Join(MytimeStr, "")
+	parsedTime, err := time.ParseDuration(formated)
+	if err != nil {
+		return 0, err
+	}
+	// Convert to milliseconds
+	milliseconds := parsedTime.Milliseconds()
+
+	return milliseconds, nil
 }
 
 // func getResponceSize(req *http.Response) int {
