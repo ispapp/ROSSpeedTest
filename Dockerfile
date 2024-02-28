@@ -1,12 +1,12 @@
-FROM golang:1.19-alpine AS builder
+FROM golang:1.20-alpine AS builder
 WORKDIR /app
 COPY . .
-RUN go mod download
-RUN go build -o ./sptest ./main.go
+RUN go mod tidy
+RUN go build -tags=jsoniter -o runner .
  
  
 FROM alpine:latest AS runner
 WORKDIR /app
 COPY --from=builder /app/runner .
 EXPOSE 8080
-ENTRYPOINT ["./sptest"]
+ENTRYPOINT ["./runner"]
