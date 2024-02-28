@@ -3,6 +3,7 @@ package speedtest
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
 	"strconv"
 	"sync"
@@ -26,6 +27,7 @@ func (t *SpeedTest) Handler(res http.ResponseWriter, req *http.Request) {
 		id := req.URL.Query().Get("id")
 		seq := req.URL.Query().Get("seq")
 		ping := req.URL.Query().Get("ping")
+		log.Println("id", id, "seq", seq, "ping", ping)
 		if req.UserAgent() == "MikroTik" && id != "" && seq != "" && ping != "" {
 			_ping, err := ConvertToMilliseconds(ping)
 			if err != nil {
@@ -72,7 +74,7 @@ func (t *SpeedTest) Handler(res http.ResponseWriter, req *http.Request) {
 					CreatedAt: time.Now().Unix(),
 				}
 				cmd := fmt.Sprintf(":return %s", ROString(tt))
-				res.Header().Add("Status", http.StatusText(200))
+				res.WriteHeader(http.StatusOK)
 				io.WriteString(res, cmd)
 			}
 			if t.TryLock() {
