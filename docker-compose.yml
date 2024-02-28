@@ -1,0 +1,10 @@
+version: "3"
+services:
+  speedtest:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: speedtest:latest
+    container_name: speedtest
+    ports:
+      - "80:9000"
